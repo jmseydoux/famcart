@@ -87,13 +87,17 @@ famcart/
 - [x] Cas d'utilisation défini
 - [x] Pile technique choisie
 - [x] Modèle de données esquissé
-- [ ] Prérequis à installer sur la machine de développement :
-  - Node.js LTS (https://nodejs.org)
-  - GitHub CLI (https://cli.github.com)
-- [ ] Création du repo GitHub
-- [ ] Initialisation du projet (frontend + backend)
-- [ ] Configuration Supabase
-- [ ] Déploiement initial
+- [x] Prérequis installés : Node.js v18, GitHub CLI
+- [x] Création du repo GitHub : https://github.com/jmseydoux/famcart
+- [x] Initialisation du projet (frontend + backend)
+- [x] Configuration Supabase (DB + migration initiale)
+- [x] Déploiement initial
+  - Frontend : https://famcart.vercel.app
+  - Backend  : https://famcart-backend.onrender.com
+- [ ] Authentification (Supabase Auth + JWT)
+- [ ] API REST (routes CRUD : articles, fournisseurs, sessions)
+- [ ] Interface utilisateur (pages : liste de courses, session courses, historique)
+- [ ] Temps réel (Supabase Realtime)
 
 ## Instructions pour reprendre la session
 
