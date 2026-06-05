@@ -1,0 +1,95 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Household {
+  id          String   @id @default(uuid())
+  name        String
+  invite_code String   @unique @default(uuid())
+  created_at  DateTime @default(now())
+
+  users     User[]
+  suppliers Supplier[]
+  items     ShoppingItem[]
+  sessions  ShoppingSession[]
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String
+  household_id String?
+  created_at   DateTime @default(now())
+
+  household       Household?        @relation(fields: [household_id], references: [id])
+  requested_items ShoppingItem[]
+  sessions        ShoppingSession[]
+}
+
+model Supplier {
+  id           String @id @default(uuid())
+  name         String
+  household_id String
+
+  household Household      @relation(fields: [household_id], references: [id])
+  items     ShoppingItem[]
+
+  @@unique([name, household_id])
+}
+
+model ShoppingItem {
+  id           String     @id @default(uuid())
+  name         String
+  quantity     Float      @default(1)
+  unit         String?
+  status       ItemStatus @default(PENDING)
+  household_id String
+  requested_by String
+  supplier_id  String?
+  created_at   DateTime   @default(now())
+
+  household     Household       @relation(fields: [household_id], references: [id])
+  requester     User            @relation(fields: [requested_by], references: [id])
+  supplier      Supplier?       @relation(fields: [supplier_id], references: [id])
+  session_items SessionItem[]
+}
+
+model ShoppingSession {
+  id           String    @id @default(uuid())
+  household_id String
+  shopper_id   String
+  started_at   DateTime  @default(now())
+  ended_at     DateTime?
+
+  household Household     @relation(fields: [household_id], references: [id])
+  shopper   User          @relation(fields: [shopper_id], references: [id])
+  items     SessionItem[]
+}
+
+model SessionItem {
+  id         String            @id @default(uuid())
+  session_id String
+  item_id    String
+  status     SessionItemStatus
+  note       String?
+
+  session ShoppingSession @relation(fields: [session_id], references: [id])
+  item    ShoppingItem    @relation(fields: [item_id], references: [id])
+}
+
+enum ItemStatus {
+  PENDING
+  BOUGHT
+  UNAVAILABLE
+}
+
+enum SessionItemStatus {
+  BOUGHT
+  UNAVAILABLE
+  SKIPPED
+}
