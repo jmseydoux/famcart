@@ -14,10 +14,10 @@ interface AuthContextValue {
   session: Session | null
   appUser: AppUser | null
   loading: boolean
-  signIn: (email: string, password: string) => Promise<void>
+  signIn: (email: string, password: string) => Promise<AppUser | null>
   signUp: (email: string, password: string, name: string) => Promise<void>
   signOut: () => Promise<void>
-  refreshUser: () => Promise<void>
+  refreshUser: () => Promise<AppUser | null>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -27,24 +27,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [appUser, setAppUser] = useState<AppUser | null>(null)
   const [loading, setLoading] = useState(true)
 
-  async function syncUser(supabaseUser: User | null) {
+  async function syncUser(supabaseUser: User | null): Promise<AppUser | null> {
     if (!supabaseUser) {
       setAppUser(null)
-      return
+      return null
     }
     try {
       const data = await api.post<{ user: AppUser }>('/auth/sync', {
         name: supabaseUser.user_metadata?.name,
       })
       setAppUser(data.user)
+      return data.user
     } catch {
       setAppUser(null)
+      return null
     }
   }
 
-  async function refreshUser() {
+  async function refreshUser(): Promise<AppUser | null> {
     const { data } = await supabase.auth.getSession()
-    await syncUser(data.session?.user ?? null)
+    return syncUser(data.session?.user ?? null)
   }
 
   useEffect(() => {
@@ -55,15 +57,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession)
-      syncUser(newSession?.user ?? null)
     })
 
     return () => listener.subscription.unsubscribe()
   }, [])
 
-  async function signIn(email: string, password: string) {
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+  async function signIn(email: string, password: string): Promise<AppUser | null> {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw new Error(error.message)
+    return syncUser(data.user)
   }
 
   async function signUp(email: string, password: string, name: string) {

@@ -15,8 +15,8 @@ export default function Login() {
     setError('')
     setLoading(true)
     try {
-      await signIn(email, password)
-      navigate('/')
+      const user = await signIn(email, password)
+      navigate(user?.household_id ? '/' : '/setup')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur de connexion')
     } finally {
