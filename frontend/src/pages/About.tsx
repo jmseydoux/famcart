@@ -1,3 +1,5 @@
+import { APP_VERSION } from '../lib/version'
+
 export default function About() {
   return (
     <div className="max-w-2xl">
@@ -25,7 +27,7 @@ export default function About() {
 
         <dl className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
           <dt className="font-medium text-gray-500">Version</dt>
-          <dd>0.1 — infrastructure</dd>
+          <dd>{APP_VERSION}</dd>
           <dt className="font-medium text-gray-500">Frontend</dt>
           <dd>React 18 + TypeScript + Vite</dd>
           <dt className="font-medium text-gray-500">Backend</dt>

@@ -15,18 +15,20 @@ model Household {
 
   users     User[]
   suppliers Supplier[]
-  items     ShoppingItem[]
+  lists     ShoppingList[]
   sessions  ShoppingSession[]
 }
 
 model User {
   id           String   @id @default(uuid())
+  supabase_id  String   @unique
   email        String   @unique
   name         String
   household_id String?
   created_at   DateTime @default(now())
 
   household       Household?        @relation(fields: [household_id], references: [id])
+  created_lists   ShoppingList[]
   requested_items ShoppingItem[]
   sessions        ShoppingSession[]
 }
@@ -37,9 +39,25 @@ model Supplier {
   household_id String
 
   household Household      @relation(fields: [household_id], references: [id])
-  items     ShoppingItem[]
+  lists     ShoppingList[]
 
   @@unique([name, household_id])
+}
+
+model ShoppingList {
+  id           String     @id @default(uuid())
+  household_id String
+  created_by   String
+  supplier_id  String?
+  status       ListStatus @default(OPEN)
+  created_at   DateTime   @default(now())
+  closed_at    DateTime?
+
+  household Household       @relation(fields: [household_id], references: [id])
+  creator   User            @relation(fields: [created_by], references: [id])
+  supplier  Supplier?       @relation(fields: [supplier_id], references: [id])
+  items     ShoppingItem[]
+  sessions  ShoppingSession[]
 }
 
 model ShoppingItem {
@@ -48,24 +66,24 @@ model ShoppingItem {
   quantity     Float      @default(1)
   unit         String?
   status       ItemStatus @default(PENDING)
-  household_id String
+  list_id      String
   requested_by String
-  supplier_id  String?
   created_at   DateTime   @default(now())
 
-  household     Household       @relation(fields: [household_id], references: [id])
+  list          ShoppingList    @relation(fields: [list_id], references: [id])
   requester     User            @relation(fields: [requested_by], references: [id])
-  supplier      Supplier?       @relation(fields: [supplier_id], references: [id])
   session_items SessionItem[]
 }
 
 model ShoppingSession {
   id           String    @id @default(uuid())
+  list_id      String
   household_id String
   shopper_id   String
   started_at   DateTime  @default(now())
   ended_at     DateTime?
 
+  list      ShoppingList  @relation(fields: [list_id], references: [id])
   household Household     @relation(fields: [household_id], references: [id])
   shopper   User          @relation(fields: [shopper_id], references: [id])
   items     SessionItem[]
@@ -80,6 +98,11 @@ model SessionItem {
 
   session ShoppingSession @relation(fields: [session_id], references: [id])
   item    ShoppingItem    @relation(fields: [item_id], references: [id])
+}
+
+enum ListStatus {
+  OPEN
+  CLOSED
 }
 
 enum ItemStatus {

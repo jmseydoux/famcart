@@ -1,29 +1,60 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { AuthProvider } from './contexts/AuthContext'
+import { RequireAuth, RequireHousehold } from './components/ProtectedRoute'
 import Layout from './components/Layout'
+import Login from './pages/Login'
+import Signup from './pages/Signup'
+import Setup from './pages/Setup'
+import Home from './pages/Home'
+import ListDetail from './pages/ListDetail'
+import History from './pages/History'
 import About from './pages/About'
 import DbStatus from './pages/DbStatus'
 
-function Home() {
-  return (
-    <div className="text-center py-16">
-      <h1 className="text-4xl font-bold text-gray-900 mb-2">FamCart</h1>
-      <p className="text-gray-500">Application de courses en famille</p>
-      <p className="text-gray-400 text-sm mt-1">&copy; JMS V0.12</p>
-    </div>
-  )
-}
+const queryClient = new QueryClient()
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route element={<Layout />}>
-          <Route index element={<Home />} />
-          <Route path="about" element={<About />} />
-          <Route path="db-status" element={<DbStatus />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* Public auth routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+
+            {/* Authenticated but no household yet */}
+            <Route
+              path="/setup"
+              element={
+                <RequireAuth>
+                  <Setup />
+                </RequireAuth>
+              }
+            />
+
+            {/* Protected app routes */}
+            <Route
+              element={
+                <RequireAuth>
+                  <RequireHousehold>
+                    <Layout />
+                  </RequireHousehold>
+                </RequireAuth>
+              }
+            >
+              <Route index element={<Home />} />
+              <Route path="lists/:id" element={<ListDetail />} />
+              <Route path="history" element={<History />} />
+              <Route path="about" element={<About />} />
+              <Route path="db-status" element={<DbStatus />} />
+            </Route>
+
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </QueryClientProvider>
   )
 }

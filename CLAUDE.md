@@ -99,10 +99,22 @@ famcart/
   - L'URL directe (`db.xxx.supabase.co:5432`) n'est pas accessible depuis Render (free tier)
   - Format : `postgresql://postgres.PROJECT_REF:PASSWORD@aws-0-REGION.pooler.supabase.com:5432/postgres?sslmode=require`
   - La variable `DATABASE_URL` sur Render doit pointer vers le pooler
-- [ ] Authentification (Supabase Auth + JWT)
-- [ ] API REST (routes CRUD : articles, fournisseurs, sessions)
-- [ ] Interface utilisateur (pages : liste de courses, session courses, historique)
+- [x] Authentification (Supabase Auth + vérification token via REST API)
+  - Node.js 18 incompatible avec `@supabase/supabase-js` v2.107+ (requiert Node 20)
+  - Solution : vérification du token via `GET /auth/v1/user` avec la secret key, sans librairie
+  - Variables backend requises : `SUPABASE_URL` + `SUPABASE_SECRET_KEY` (secret key du dashboard)
+- [x] Ménages (créer un ménage ou rejoindre via code d'invitation)
+- [x] API REST (listes, articles, fournisseurs)
+  - Une seule liste ouverte par (ménage, fournisseur)
+  - Les membres peuvent ajouter des articles aux listes ouvertes
+  - Historique des listes clôturées
+- [x] Interface utilisateur
+  - Pages : Login, Signup, Setup (ménage), Home (listes ouvertes), ListDetail, History, About, DbStatus
+  - Flux de navigation : non connecté → /login, connecté sans ménage → /setup, connecté avec ménage → /
+  - Version affichée dans l'entête (variable `APP_VERSION` dans `src/lib/version.ts`)
+- [ ] Sessions de courses (cocher les articles pendant les courses)
 - [ ] Temps réel (Supabase Realtime)
+- [ ] Gestion des fournisseurs dans l'UI
 
 ## Instructions pour reprendre la session
 
