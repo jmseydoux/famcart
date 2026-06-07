@@ -22,8 +22,9 @@ router.get('/', async (_req: Request, res: Response) => {
         { name: 'ShoppingSession', count: sessions   },
       ],
     })
-  } catch {
-    res.status(500).json({ error: 'Impossible de se connecter à la base de données.' })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    res.status(500).json({ error: 'Impossible de se connecter à la base de données.', detail: message })
   }
 })
 
