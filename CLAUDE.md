@@ -94,6 +94,11 @@ famcart/
 - [x] Déploiement initial
   - Frontend : https://famcart.vercel.app
   - Backend  : https://famcart-backend.onrender.com
+- [x] Connexion backend → Supabase opérationnelle
+  - Utiliser l'URL du **connection pooler** Supabase (Supabase → Connect → Session mode), pas l'URL directe
+  - L'URL directe (`db.xxx.supabase.co:5432`) n'est pas accessible depuis Render (free tier)
+  - Format : `postgresql://postgres.PROJECT_REF:PASSWORD@aws-0-REGION.pooler.supabase.com:5432/postgres?sslmode=require`
+  - La variable `DATABASE_URL` sur Render doit pointer vers le pooler
 - [ ] Authentification (Supabase Auth + JWT)
 - [ ] API REST (routes CRUD : articles, fournisseurs, sessions)
 - [ ] Interface utilisateur (pages : liste de courses, session courses, historique)

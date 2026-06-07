@@ -8,7 +8,7 @@ function Home() {
     <div className="text-center py-16">
       <h1 className="text-4xl font-bold text-gray-900 mb-2">FamCart</h1>
       <p className="text-gray-500">Application de courses en famille</p>
-      <p className="text-gray-400 text-sm mt-1">&copy; JMS V0.11</p>
+      <p className="text-gray-400 text-sm mt-1">&copy; JMS V0.12</p>
     </div>
   )
 }

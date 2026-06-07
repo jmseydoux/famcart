@@ -96,6 +96,9 @@ JWT_SECRET="..."
 PORT=3000
 ```
 
+> **Important Supabase** : utilise l'URL du **connection pooler** (disponible dans Supabase → Connect → Session mode), pas l'URL directe. L'URL directe (`db.xxx.supabase.co:5432`) n'est pas accessible depuis Render. Format attendu :
+> `postgresql://postgres.PROJECT_REF:PASSWORD@aws-0-REGION.pooler.supabase.com:5432/postgres?sslmode=require`
+
 **`frontend/.env.local`**
 ```
 VITE_SUPABASE_URL="https://xxx.supabase.co"
@@ -119,6 +122,7 @@ npm run db:studio    # Ouvrir Prisma Studio (interface visuelle DB)
 - [x] Backend scaffoldé (Express + Prisma + schéma DB)
 - [x] Base de données Supabase configurée et migrée
 - [x] Déploiement initial (Vercel + Render)
+- [x] Connexion backend → Supabase opérationnelle (pooler)
 - [ ] Authentification (inscription / connexion)
 - [ ] API REST (articles, fournisseurs, sessions)
 - [ ] Interface utilisateur
