@@ -16,7 +16,7 @@ type FetchState =
 
 export default function DbStatus() {
   const [state, setState] = useState<FetchState>({ status: 'loading' })
-  const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
+  const apiUrl = (import.meta.env.VITE_API_URL ?? 'http://localhost:3000').replace(/\/$/, '')
 
   useEffect(() => {
     fetch(`${apiUrl}/status`)
