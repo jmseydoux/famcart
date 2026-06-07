@@ -16,9 +16,9 @@ type FetchState =
 
 export default function DbStatus() {
   const [state, setState] = useState<FetchState>({ status: 'loading' })
+  const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
   useEffect(() => {
-    const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
     fetch(`${apiUrl}/status`)
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`)
@@ -42,11 +42,13 @@ export default function DbStatus() {
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
           <p className="font-medium">Impossible de joindre le backend</p>
           <p className="text-sm mt-1">{state.message}</p>
+          <p className="text-xs mt-2 text-red-500 font-mono">{apiUrl}</p>
         </div>
       )}
 
       {state.status === 'success' && (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <p className="text-xs text-gray-400 font-mono px-6 py-2 border-b border-gray-100">{apiUrl}</p>
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
