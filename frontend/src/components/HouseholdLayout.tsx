@@ -1,10 +1,10 @@
 import { useRef, useState, useEffect } from 'react'
-import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate, useParams, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { APP_VERSION } from '../lib/version'
-import { Bell, ChevronDown, X, Settings } from 'lucide-react'
+import { ShoppingCart, Package, History, Settings, Bell, ChevronDown, X, ChevronLeft } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
+import { APP_VERSION } from '../lib/version'
 
 interface Notification {
   id: string
@@ -12,6 +12,12 @@ interface Notification {
   type: string
   read: boolean
   created_at: string
+}
+
+interface Household {
+  id: string
+  name: string
+  role: string
 }
 
 function NotificationBell() {
@@ -77,8 +83,8 @@ function NotificationBell() {
   )
 }
 
-function UserMenu() {
-  const { appUser, session, signOut } = useAuth()
+function UserMenu({ householdName }: { householdName: string }) {
+  const { appUser, signOut } = useAuth()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -100,7 +106,6 @@ function UserMenu() {
   const initials = appUser?.name
     ? appUser.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
     : '?'
-  const email = appUser?.email ?? session?.user?.email ?? ''
 
   return (
     <div className="relative" ref={ref}>
@@ -119,35 +124,35 @@ function UserMenu() {
         <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-2xl shadow-xl py-1 z-50">
           <div className="px-4 py-3 border-b border-gray-100">
             <p className="text-sm font-medium text-gray-900 truncate">{appUser?.name}</p>
-            <p className="text-xs text-gray-400 truncate mt-0.5">{email}</p>
+            <p className="text-xs text-gray-400 truncate mt-0.5">{householdName}</p>
           </div>
+          <Link
+            to="/"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Changer de ménage
+          </Link>
           {appUser?.is_super_admin && (
             <Link
               to="/admin"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-purple-700 hover:bg-purple-50 transition-colors"
+              className="flex w-full px-4 py-2.5 text-sm text-purple-700 hover:bg-purple-50"
             >
-              <Settings className="w-4 h-4" />
               Administration
             </Link>
           )}
           <NavLink
             to="/about"
             onClick={() => setOpen(false)}
-            className="flex w-full px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+            className="flex w-full px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50"
           >
             À propos
           </NavLink>
-          <NavLink
-            to="/db-status"
-            onClick={() => setOpen(false)}
-            className="flex w-full px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
-          >
-            Status BD
-          </NavLink>
           <button
             onClick={handleSignOut}
-            className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors border-t border-gray-100 mt-1"
+            className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 border-t border-gray-100 mt-1"
           >
             Déconnexion
           </button>
@@ -157,24 +162,65 @@ function UserMenu() {
   )
 }
 
-export default function Layout() {
+export default function HouseholdLayout() {
+  const { hid } = useParams<{ hid: string }>()
+
+  const { data } = useQuery({
+    queryKey: ['household', hid],
+    queryFn: () => api.get<{ household: Household }>(`/households/${hid}`),
+    enabled: !!hid,
+  })
+
+  const household = data?.household
+  const isAdmin = household?.role === 'ADMIN'
+
+  const tabs = [
+    { to: 'lists', icon: ShoppingCart, label: 'Listes' },
+    { to: 'products', icon: Package, label: 'Produits' },
+    { to: 'history', icon: History, label: 'Historique' },
+    ...(isAdmin ? [{ to: 'settings', icon: Settings, label: 'Réglages' }] : []),
+  ]
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
-          <Link to="/" className="text-xl font-bold text-gray-900 flex items-baseline gap-1.5">
-            FamCart
-            <span className="text-xs font-normal text-gray-400">v{APP_VERSION}</span>
-          </Link>
+          <div>
+            <p className="text-xs text-gray-400">Ménage</p>
+            <p className="font-semibold text-gray-900 leading-tight">{household?.name ?? '…'}</p>
+          </div>
           <div className="flex items-center gap-2">
             <NotificationBell />
-            <UserMenu />
+            <UserMenu householdName={household?.name ?? ''} />
           </div>
         </div>
       </header>
-      <main className="max-w-lg mx-auto px-4 py-6">
-        <Outlet />
+
+      <main className="flex-1 max-w-lg mx-auto w-full px-4 pt-4 pb-24">
+        <Outlet context={{ household, isAdmin }} />
       </main>
+
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30">
+        <div className="max-w-lg mx-auto flex">
+          {tabs.map(tab => (
+            <NavLink
+              key={tab.to}
+              to={`/household/${hid}/${tab.to}`}
+              className={({ isActive }) =>
+                `flex-1 flex flex-col items-center gap-0.5 py-3 transition-colors ${
+                  isActive ? 'text-blue-600' : 'text-gray-400 hover:text-gray-600'
+                }`
+              }
+            >
+              <tab.icon className="w-5 h-5" />
+              <span className="text-[11px] font-medium">{tab.label}</span>
+            </NavLink>
+          ))}
+        </div>
+        <div className="text-center pb-0.5">
+          <span className="text-[10px] text-gray-300">v{APP_VERSION}</span>
+        </div>
+      </nav>
     </div>
   )
 }

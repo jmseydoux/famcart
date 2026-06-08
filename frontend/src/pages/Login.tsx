@@ -1,6 +1,8 @@
 import { useState, FormEvent, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { Button } from '../components/ui/Button'
+import { Input } from '../components/ui/Input'
 
 export default function Login() {
   const { signIn, signInWithGoogle, session } = useAuth()
@@ -40,15 +42,17 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
-        <h1 className="text-3xl font-bold text-gray-900 text-center mb-2">FamCart</h1>
-        <p className="text-center text-sm text-gray-400 mb-8">Banc de test infrastructure</p>
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-gray-900">🛒 FamCart</h1>
+          <p className="text-gray-500 mt-2">Vos courses en famille, coordonnées</p>
+        </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-900 mb-6">Connexion</h2>
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-gray-900 mb-5">Connexion</h2>
 
           <button
             onClick={handleGoogle}
-            className="w-full flex items-center justify-center gap-3 border border-gray-300 rounded-md px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors mb-4"
+            className="w-full flex items-center justify-center gap-3 border border-gray-300 rounded-xl px-4 py-3.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors mb-4"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -69,41 +73,39 @@ export default function Login() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="vous@exemple.com"
-              />
-            </div>
+            <Input
+              label="Email"
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              required
+              placeholder="vous@exemple.com"
+              autoComplete="email"
+            />
+            <Input
+              label="Mot de passe"
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+              placeholder="••••••••"
+              autoComplete="current-password"
+            />
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Mot de passe</label>
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="••••••••"
-              />
-            </div>
+            {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-xl">{error}</p>}
 
-            {error && <p className="text-sm text-red-600">{error}</p>}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-blue-600 text-white rounded-md py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
-            >
-              {loading ? 'Connexion…' : 'Se connecter'}
-            </button>
+            <Button type="submit" loading={loading} className="w-full" size="lg">
+              Se connecter
+            </Button>
           </form>
         </div>
+
+        <p className="text-center text-sm text-gray-500 mt-6">
+          Vous avez un lien d'invitation ?{' '}
+          <Link to="/register" className="text-blue-600 font-medium hover:underline">
+            Créer un compte
+          </Link>
+        </p>
       </div>
     </div>
   )

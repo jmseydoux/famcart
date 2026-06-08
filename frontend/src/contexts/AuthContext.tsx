@@ -3,10 +3,13 @@ import { Session, User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { api } from '../lib/api'
 
-interface AppUser {
+export interface AppUser {
   id: string
   name: string
   email: string
+  is_super_admin: boolean
+  max_households: number
+  max_members: number
 }
 
 interface AuthContextValue {
@@ -14,8 +17,10 @@ interface AuthContextValue {
   appUser: AppUser | null
   loading: boolean
   signIn: (email: string, password: string) => Promise<void>
+  signUp: (email: string, password: string, name: string, inviteToken?: string) => Promise<void>
   signInWithGoogle: () => Promise<void>
   signOut: () => Promise<void>
+  refreshUser: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -25,19 +30,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [appUser, setAppUser] = useState<AppUser | null>(null)
   const [loading, setLoading] = useState(true)
 
-  async function syncUser(supabaseUser: User | null): Promise<void> {
-    if (!supabaseUser) {
-      setAppUser(null)
-      return
-    }
+  async function syncUser(supabaseUser: User | null, inviteToken?: string): Promise<void> {
+    if (!supabaseUser) { setAppUser(null); return }
     try {
       const data = await api.post<{ user: AppUser }>('/auth/sync', {
         name: supabaseUser.user_metadata?.full_name ?? supabaseUser.user_metadata?.name,
+        invite_token: inviteToken,
       })
       setAppUser(data.user)
     } catch {
       setAppUser(null)
     }
+  }
+
+  async function refreshUser() {
+    if (!session?.user) return
+    await syncUser(session.user)
   }
 
   useEffect(() => {
@@ -48,12 +56,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data: listener } = supabase.auth.onAuthStateChange((event, newSession) => {
       setSession(newSession)
-      if (event === 'SIGNED_IN') {
-        syncUser(newSession?.user ?? null)
-      }
-      if (event === 'SIGNED_OUT') {
-        setAppUser(null)
-      }
+      if (event === 'SIGNED_IN') syncUser(newSession?.user ?? null)
+      if (event === 'SIGNED_OUT') setAppUser(null)
     })
 
     return () => listener.subscription.unsubscribe()
@@ -65,10 +69,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await syncUser(data.user)
   }
 
+  async function signUp(email: string, password: string, name: string, inviteToken?: string): Promise<void> {
+    const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: name } } })
+    if (error) throw new Error(error.message)
+    if (data.user) await syncUser(data.user, inviteToken)
+  }
+
   async function signInWithGoogle(): Promise<void> {
+    const inviteToken = sessionStorage.getItem('pendingInviteToken') ?? undefined
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin },
+      options: {
+        redirectTo: window.location.origin,
+        queryParams: inviteToken ? { invite_token: inviteToken } : undefined,
+      },
     })
     if (error) throw new Error(error.message)
   }
@@ -79,7 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ session, appUser, loading, signIn, signInWithGoogle, signOut }}>
+    <AuthContext.Provider value={{ session, appUser, loading, signIn, signUp, signInWithGoogle, signOut, refreshUser }}>
       {children}
     </AuthContext.Provider>
   )

@@ -7,30 +7,81 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Household {
-  id          String   @id @default(uuid())
-  name        String
-  invite_code String   @unique @default(uuid())
-  created_at  DateTime @default(now())
+model PlatformInvitation {
+  id             String    @id @default(uuid())
+  token          String    @unique @default(uuid())
+  created_by_id  String
+  max_households Int       @default(1)
+  max_members    Int       @default(5)
+  expires_at     DateTime
+  used_at        DateTime?
+  used_by_id     String?   @unique
+  created_at     DateTime  @default(now())
 
-  users     User[]
-  suppliers Supplier[]
-  lists     ShoppingList[]
-  sessions  ShoppingSession[]
+  created_by User  @relation("CreatedInvitations", fields: [created_by_id], references: [id])
+  used_by    User? @relation("UsedInvitation", fields: [used_by_id], references: [id])
 }
 
 model User {
-  id           String   @id @default(uuid())
-  supabase_id  String   @unique
-  email        String   @unique
-  name         String
-  household_id String?
-  created_at   DateTime @default(now())
+  id             String   @id @default(uuid())
+  supabase_id    String   @unique
+  email          String   @unique
+  name           String
+  is_super_admin Boolean  @default(false)
+  max_households Int      @default(1)
+  max_members    Int      @default(5)
+  created_at     DateTime @default(now())
 
-  household       Household?        @relation(fields: [household_id], references: [id])
-  created_lists   ShoppingList[]
-  requested_items ShoppingItem[]
-  sessions        ShoppingSession[]
+  householdMembers            HouseholdMember[]
+  createdLists                ShoppingList[]
+  addedItems                  ListItem[]
+  sessions                    ShoppingSession[]
+  createdPlatformInvitations  PlatformInvitation[]  @relation("CreatedInvitations")
+  usedPlatformInvitation      PlatformInvitation?   @relation("UsedInvitation")
+  createdHouseholdInvitations HouseholdInvitation[]
+  notifications               Notification[]
+}
+
+model Household {
+  id         String   @id @default(uuid())
+  name       String
+  created_at DateTime @default(now())
+
+  members       HouseholdMember[]
+  suppliers     Supplier[]
+  lists         ShoppingList[]
+  sessions      ShoppingSession[]
+  products      Product[]
+  invitations   HouseholdInvitation[]
+  notifications Notification[]
+}
+
+model HouseholdMember {
+  id           String        @id @default(uuid())
+  user_id      String
+  household_id String
+  role         HouseholdRole @default(MEMBER)
+  joined_at    DateTime      @default(now())
+
+  user      User      @relation(fields: [user_id], references: [id])
+  household Household @relation(fields: [household_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, household_id])
+}
+
+model HouseholdInvitation {
+  id            String    @id @default(uuid())
+  household_id  String
+  created_by_id String
+  token         String    @unique @default(uuid())
+  code          String    @unique
+  email         String?
+  expires_at    DateTime
+  used_at       DateTime?
+  created_at    DateTime  @default(now())
+
+  household  Household @relation(fields: [household_id], references: [id], onDelete: Cascade)
+  created_by User      @relation(fields: [created_by_id], references: [id])
 }
 
 model Supplier {
@@ -38,46 +89,73 @@ model Supplier {
   name         String
   household_id String
 
-  household Household      @relation(fields: [household_id], references: [id])
+  household Household         @relation(fields: [household_id], references: [id], onDelete: Cascade)
   lists     ShoppingList[]
+  products  ProductSupplier[]
 
   @@unique([name, household_id])
 }
 
-model ShoppingList {
-  id           String     @id @default(uuid())
+model Product {
+  id           String   @id @default(uuid())
+  name         String
+  category     String
   household_id String
-  created_by   String
-  supplier_id  String?
-  status       ListStatus @default(OPEN)
-  created_at   DateTime   @default(now())
-  closed_at    DateTime?
+  created_at   DateTime @default(now())
 
-  household Household       @relation(fields: [household_id], references: [id])
-  creator   User            @relation(fields: [created_by], references: [id])
-  supplier  Supplier?       @relation(fields: [supplier_id], references: [id])
-  items     ShoppingItem[]
+  household Household         @relation(fields: [household_id], references: [id], onDelete: Cascade)
+  suppliers ProductSupplier[]
+  listItems ListItem[]
+}
+
+model ProductSupplier {
+  product_id  String
+  supplier_id String
+
+  product  Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  supplier Supplier @relation(fields: [supplier_id], references: [id], onDelete: Cascade)
+
+  @@id([product_id, supplier_id])
+}
+
+model ShoppingList {
+  id            String     @id @default(uuid())
+  household_id  String
+  supplier_id   String?
+  created_by_id String
+  status        ListStatus @default(ACTIVE)
+  created_at    DateTime   @default(now())
+  closed_at     DateTime?
+
+  household Household         @relation(fields: [household_id], references: [id], onDelete: Cascade)
+  supplier  Supplier?         @relation(fields: [supplier_id], references: [id])
+  creator   User              @relation(fields: [created_by_id], references: [id])
+  items     ListItem[]
   sessions  ShoppingSession[]
 }
 
-model ShoppingItem {
+model ListItem {
   id           String     @id @default(uuid())
+  list_id      String
+  product_id   String?
   name         String
   quantity     Float      @default(1)
   unit         String?
-  status       ItemStatus @default(PENDING)
-  list_id      String
-  requested_by String
+  notes        String?
+  desired_date DateTime?
+  added_by_id  String
+  status       ItemStatus @default(TO_BUY)
   created_at   DateTime   @default(now())
 
-  list          ShoppingList    @relation(fields: [list_id], references: [id])
-  requester     User            @relation(fields: [requested_by], references: [id])
-  session_items SessionItem[]
+  list         ShoppingList  @relation(fields: [list_id], references: [id], onDelete: Cascade)
+  product      Product?      @relation(fields: [product_id], references: [id])
+  added_by     User          @relation(fields: [added_by_id], references: [id])
+  sessionItems SessionItem[]
 }
 
 model ShoppingSession {
   id           String    @id @default(uuid())
-  list_id      String
+  list_id      String    @unique
   household_id String
   shopper_id   String
   started_at   DateTime  @default(now())
@@ -92,27 +170,53 @@ model ShoppingSession {
 model SessionItem {
   id         String            @id @default(uuid())
   session_id String
-  item_id    String
-  status     SessionItemStatus
+  item_id    String            @unique
+  status     SessionItemStatus @default(PENDING)
   note       String?
 
-  session ShoppingSession @relation(fields: [session_id], references: [id])
-  item    ShoppingItem    @relation(fields: [item_id], references: [id])
+  session ShoppingSession @relation(fields: [session_id], references: [id], onDelete: Cascade)
+  item    ListItem        @relation(fields: [item_id], references: [id])
+}
+
+model Notification {
+  id           String    @id @default(uuid())
+  user_id      String
+  household_id String
+  type         NotifType
+  message      String
+  read         Boolean   @default(false)
+  created_at   DateTime  @default(now())
+
+  user      User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  household Household @relation(fields: [household_id], references: [id], onDelete: Cascade)
+}
+
+enum HouseholdRole {
+  ADMIN
+  MEMBER
 }
 
 enum ListStatus {
-  OPEN
-  CLOSED
+  ACTIVE
+  IN_PROGRESS
+  ARCHIVED
 }
 
 enum ItemStatus {
-  PENDING
+  TO_BUY
   BOUGHT
-  UNAVAILABLE
+  SKIPPED
 }
 
 enum SessionItemStatus {
+  PENDING
   BOUGHT
   UNAVAILABLE
   SKIPPED
+}
+
+enum NotifType {
+  LIST_MODIFIED
+  SHOPPING_STARTED
+  MEMBER_JOINED
 }

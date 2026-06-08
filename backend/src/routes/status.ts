@@ -5,12 +5,13 @@ const router = Router()
 
 router.get('/', async (_req: Request, res: Response) => {
   try {
-    const [households, users, suppliers, items, sessions] = await Promise.all([
+    const [households, users, suppliers, items, sessions, products] = await Promise.all([
       prisma.household.count(),
       prisma.user.count(),
       prisma.supplier.count(),
-      prisma.shoppingItem.count(),
+      prisma.listItem.count(),
       prisma.shoppingSession.count(),
+      prisma.product.count(),
     ])
 
     res.json({
@@ -18,7 +19,8 @@ router.get('/', async (_req: Request, res: Response) => {
         { name: 'Household',       count: households },
         { name: 'User',            count: users      },
         { name: 'Supplier',        count: suppliers  },
-        { name: 'ShoppingItem',    count: items      },
+        { name: 'Product',         count: products   },
+        { name: 'ListItem',        count: items      },
         { name: 'ShoppingSession', count: sessions   },
       ],
     })

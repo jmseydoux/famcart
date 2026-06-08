@@ -107,13 +107,27 @@ famcart/
   - Configurer dans Google Cloud Console : ajouter `https://[PROJECT_REF].supabase.co/auth/v1/callback` aux Authorized redirect URIs
   - Activer le provider Google dans Supabase Dashboard → Authentication → Providers
   - Ajouter les redirect URLs dans Supabase → Authentication → URL Configuration : `http://localhost:5173` et `https://famcart.vercel.app`
-- [x] Simplification : retrait de toutes les fonctionnalités métier (ménages, listes, articles, fournisseurs)
-- [x] Dashboard infrastructure
-  - Pages : Login, Home (dashboard), About, DbStatus
-  - Flux de navigation : non connecté → /login, connecté → /
-  - 4 panneaux : Authentification, Backend (/health + latence), Base de données (/status), Frontend (version/env)
-  - Version affichée dans l'entête (variable `APP_VERSION` dans `src/lib/version.ts`)
-- [ ] Déploiement de la version simplifiée (push + vérification Vercel/Render)
+- [x] Application complète implémentée (juin 2026)
+  - Schéma Prisma complet (PlatformInvitation, User, Household, HouseholdMember, HouseholdInvitation, Supplier, Product, ShoppingList, ListItem, ShoppingSession, SessionItem, Notification)
+  - Backend : toutes les routes API (auth, admin, households, products, lists, sessions, notifications)
+  - Frontend : pages Register, Home, HouseholdView, ShoppingListView, ShoppingMode, ProductCatalog, History, HouseholdSettings, Admin + About, DbStatus conservées
+  - Navigation mobile-first avec barre d'onglets en bas
+  - Multi-ménages, rôles Admin/Membre, Super-Admin
+  - Invitations plateforme + ménage avec code à 6 caractères
+  - Mode courses : cochage article par article, rafraîchissement manuel, report automatique
+
+## Bootstrap du premier Super-Admin
+
+1. Ajouter `SUPER_ADMIN_SECRET=votre-secret` dans les variables d'env du backend (Render)
+2. Se connecter → naviguer vers `/admin`
+3. Bouton "Bootstrap Super-Admin" → saisir le secret
+4. L'utilisateur connecté devient Super-Admin
+
+## Prochaines étapes
+
+- [ ] Push GitHub + vérification CI/CD Vercel/Render
+- [ ] Configurer `SUPER_ADMIN_SECRET` sur Render
+- [ ] Créer les premières invitations plateforme depuis `/admin`
 
 ## Instructions pour reprendre la session
 
