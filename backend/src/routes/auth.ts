@@ -24,6 +24,7 @@ router.post('/sync', async (req: Request, res: Response) => {
 
   const { name } = req.body
   const userName = name
+    || (supabaseUser.user_metadata?.full_name as string | undefined)
     || (supabaseUser.user_metadata?.name as string | undefined)
     || supabaseUser.email.split('@')[0]
 

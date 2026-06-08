@@ -103,18 +103,17 @@ famcart/
   - Node.js 18 incompatible avec `@supabase/supabase-js` v2.107+ (requiert Node 20)
   - Solution : vérification du token via `GET /auth/v1/user` avec la secret key, sans librairie
   - Variables backend requises : `SUPABASE_URL` + `SUPABASE_SECRET_KEY` (secret key du dashboard)
-- [x] Ménages (créer un ménage ou rejoindre via code d'invitation)
-- [x] API REST (listes, articles, fournisseurs)
-  - Une seule liste ouverte par (ménage, fournisseur)
-  - Les membres peuvent ajouter des articles aux listes ouvertes
-  - Historique des listes clôturées
-- [x] Interface utilisateur
-  - Pages : Login, Signup, Setup (ménage), Home (listes ouvertes), ListDetail, History, About, DbStatus
-  - Flux de navigation : non connecté → /login, connecté sans ménage → /setup, connecté avec ménage → /
+- [x] Google OAuth
+  - Configurer dans Google Cloud Console : ajouter `https://[PROJECT_REF].supabase.co/auth/v1/callback` aux Authorized redirect URIs
+  - Activer le provider Google dans Supabase Dashboard → Authentication → Providers
+  - Ajouter les redirect URLs dans Supabase → Authentication → URL Configuration : `http://localhost:5173` et `https://famcart.vercel.app`
+- [x] Simplification : retrait de toutes les fonctionnalités métier (ménages, listes, articles, fournisseurs)
+- [x] Dashboard infrastructure
+  - Pages : Login, Home (dashboard), About, DbStatus
+  - Flux de navigation : non connecté → /login, connecté → /
+  - 4 panneaux : Authentification, Backend (/health + latence), Base de données (/status), Frontend (version/env)
   - Version affichée dans l'entête (variable `APP_VERSION` dans `src/lib/version.ts`)
-- [ ] Sessions de courses (cocher les articles pendant les courses)
-- [ ] Temps réel (Supabase Realtime)
-- [ ] Gestion des fournisseurs dans l'UI
+- [ ] Déploiement de la version simplifiée (push + vérification Vercel/Render)
 
 ## Instructions pour reprendre la session
 

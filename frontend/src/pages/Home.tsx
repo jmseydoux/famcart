@@ -1,141 +1,141 @@
-import { useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { api } from '../lib/api'
 import { useAuth } from '../contexts/AuthContext'
+import { APP_VERSION } from '../lib/version'
 
-interface Supplier {
-  id: string
-  name: string
+type Status = 'loading' | 'ok' | 'error'
+
+const apiUrl = (import.meta.env.VITE_API_URL ?? 'http://localhost:3000').replace(/\/$/, '')
+
+function StatusBadge({ status }: { status: Status }) {
+  if (status === 'loading') return <span className="text-xs text-gray-400">…</span>
+  if (status === 'ok') return <span className="text-xs font-medium text-green-700 bg-green-50 px-2 py-0.5 rounded-full">OK</span>
+  return <span className="text-xs font-medium text-red-700 bg-red-50 px-2 py-0.5 rounded-full">Erreur</span>
 }
 
-interface ShoppingList {
-  id: string
-  created_at: string
-  status: 'OPEN' | 'CLOSED'
-  pending_count: number
-  creator: { id: string; name: string }
-  supplier: Supplier | null
+function Panel({ title, status, children }: { title: string; status: Status; children: React.ReactNode }) {
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="font-semibold text-gray-800">{title}</h2>
+        <StatusBadge status={status} />
+      </div>
+      <div className="space-y-2">{children}</div>
+    </div>
+  )
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between items-center text-sm">
+      <span className="text-gray-500">{label}</span>
+      <span className="text-gray-800 font-mono text-xs bg-gray-50 border border-gray-100 px-1.5 py-0.5 rounded max-w-[60%] truncate">{value}</span>
+    </div>
+  )
 }
 
 export default function Home() {
-  const { appUser } = useAuth()
-  const queryClient = useQueryClient()
-  const [showNewListForm, setShowNewListForm] = useState(false)
-  const [selectedSupplierId, setSelectedSupplierId] = useState<string>('')
-  const [error, setError] = useState('')
+  const { session, appUser } = useAuth()
 
-  const { data: listsData, isLoading: loadingLists } = useQuery({
-    queryKey: ['lists'],
-    queryFn: () => api.get<{ lists: ShoppingList[] }>('/lists'),
-  })
+  const [backendStatus, setBackendStatus] = useState<Status>('loading')
+  const [backendLatency, setBackendLatency] = useState<number | null>(null)
+  const [backendError, setBackendError] = useState<string | null>(null)
 
-  const { data: suppliersData } = useQuery({
-    queryKey: ['suppliers'],
-    queryFn: () => api.get<{ suppliers: Supplier[] }>('/suppliers'),
-  })
+  const [dbStatus, setDbStatus] = useState<Status>('loading')
+  const [dbTableCount, setDbTableCount] = useState<number | null>(null)
+  const [dbError, setDbError] = useState<string | null>(null)
 
-  const createList = useMutation({
-    mutationFn: (supplier_id: string | null) =>
-      api.post<{ list: ShoppingList }>('/lists', { supplier_id: supplier_id || undefined }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['lists'] })
-      setShowNewListForm(false)
-      setSelectedSupplierId('')
-      setError('')
-    },
-    onError: (err: Error) => setError(err.message),
-  })
+  const checkBackend = useCallback(async () => {
+    setBackendStatus('loading')
+    setBackendLatency(null)
+    setBackendError(null)
+    const start = performance.now()
+    try {
+      const r = await fetch(`${apiUrl}/health`)
+      const latency = Math.round(performance.now() - start)
+      if (!r.ok) throw new Error(`HTTP ${r.status}`)
+      setBackendLatency(latency)
+      setBackendStatus('ok')
+    } catch (err) {
+      setBackendError(err instanceof Error ? err.message : 'Erreur réseau')
+      setBackendStatus('error')
+    }
+  }, [])
 
-  const lists = listsData?.lists ?? []
-  const suppliers = suppliersData?.suppliers ?? []
+  const checkDb = useCallback(async () => {
+    setDbStatus('loading')
+    setDbTableCount(null)
+    setDbError(null)
+    try {
+      const r = await fetch(`${apiUrl}/status`)
+      if (!r.ok) throw new Error(`HTTP ${r.status}`)
+      const data = await r.json()
+      setDbTableCount(data.tables?.length ?? 0)
+      setDbStatus('ok')
+    } catch (err) {
+      setDbError(err instanceof Error ? err.message : 'Erreur réseau')
+      setDbStatus('error')
+    }
+  }, [])
+
+  useEffect(() => {
+    checkBackend()
+    checkDb()
+  }, [checkBackend, checkDb])
+
+  const provider = session?.user?.app_metadata?.provider ?? 'email'
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Listes de courses</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Bonjour, {appUser?.name}</p>
-        </div>
-        <button
-          onClick={() => setShowNewListForm(v => !v)}
-          className="bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-blue-700 transition-colors"
-        >
-          + Nouvelle liste
-        </button>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Tableau de bord</h1>
+        <p className="text-sm text-gray-500 mt-0.5">État des composants de l'infrastructure</p>
       </div>
 
-      {showNewListForm && (
-        <div className="bg-white border border-gray-200 rounded-lg p-4 mb-6 shadow-sm">
-          <h2 className="text-sm font-semibold text-gray-900 mb-3">Nouvelle liste</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Panel title="Authentification" status="ok">
+          <Row label="Utilisateur" value={appUser?.name ?? session?.user?.email ?? '—'} />
+          <Row label="Email" value={appUser?.email ?? session?.user?.email ?? '—'} />
+          <Row label="Provider" value={provider} />
+          <Row label="Session" value="active" />
+        </Panel>
+
+        <Panel title="Backend" status={backendStatus}>
+          <Row label="URL" value={apiUrl} />
+          {backendStatus === 'ok' && backendLatency !== null && (
+            <Row label="Latence" value={`${backendLatency} ms`} />
+          )}
+          {backendStatus === 'error' && backendError && (
+            <p className="text-xs text-red-600">{backendError}</p>
+          )}
+          <button onClick={checkBackend} className="text-xs text-blue-600 hover:underline">
+            Tester à nouveau
+          </button>
+        </Panel>
+
+        <Panel title="Base de données" status={dbStatus}>
+          {dbStatus === 'ok' && dbTableCount !== null && (
+            <Row label="Tables" value={`${dbTableCount}`} />
+          )}
+          {dbStatus === 'error' && dbError && (
+            <p className="text-xs text-red-600">{dbError}</p>
+          )}
           <div className="flex gap-3">
-            <select
-              value={selectedSupplierId}
-              onChange={e => setSelectedSupplierId(e.target.value)}
-              className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Aucun fournisseur (liste générale)</option>
-              {suppliers.map(s => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </select>
-            <button
-              onClick={() => createList.mutate(selectedSupplierId || null)}
-              disabled={createList.isPending}
-              className="bg-blue-600 text-white rounded-md px-4 py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
-            >
-              {createList.isPending ? 'Création…' : 'Créer'}
+            <button onClick={checkDb} className="text-xs text-blue-600 hover:underline">
+              Tester à nouveau
             </button>
-            <button
-              onClick={() => { setShowNewListForm(false); setError('') }}
-              className="text-gray-500 hover:text-gray-700 px-2 text-sm"
-            >
-              Annuler
-            </button>
-          </div>
-          {error && <p className="text-sm text-red-600 mt-2">{error}</p>}
-        </div>
-      )}
-
-      {loadingLists ? (
-        <div className="text-center py-16 text-gray-400 text-sm">Chargement…</div>
-      ) : lists.length === 0 ? (
-        <div className="text-center py-16">
-          <p className="text-gray-500">Aucune liste ouverte pour le moment.</p>
-          <p className="text-sm text-gray-400 mt-1">Créez une nouvelle liste pour commencer.</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {lists.map(list => (
-            <Link
-              key={list.id}
-              to={`/lists/${list.id}`}
-              className="block bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:border-blue-300 hover:shadow-md transition-all"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-gray-900">
-                    {list.supplier?.name ?? 'Liste générale'}
-                  </p>
-                  <p className="text-sm text-gray-500 mt-0.5">
-                    Par {list.creator.name} · {new Date(list.created_at).toLocaleDateString('fr-FR')}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <span className="inline-flex items-center bg-blue-50 text-blue-700 text-xs font-medium px-2.5 py-1 rounded-full">
-                    {list.pending_count} article{list.pending_count !== 1 ? 's' : ''}
-                  </span>
-                </div>
-              </div>
+            <Link to="/db-status" className="text-xs text-blue-600 hover:underline">
+              Détails →
             </Link>
-          ))}
-        </div>
-      )}
+          </div>
+        </Panel>
 
-      <div className="mt-8 pt-6 border-t border-gray-200">
-        <Link to="/history" className="text-sm text-gray-500 hover:text-gray-700">
-          Voir l'historique des courses →
-        </Link>
+        <Panel title="Frontend" status="ok">
+          <Row label="Version" value={APP_VERSION} />
+          <Row label="Environnement" value={import.meta.env.MODE} />
+          <Row label="API" value={apiUrl} />
+          <Row label="Stack" value="React 18 + Vite + TypeScript" />
+        </Panel>
       </div>
     </div>
   )

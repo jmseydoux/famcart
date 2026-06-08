@@ -1,16 +1,13 @@
-# FamCart
+# FamCart — Banc de test infrastructure
 
-Application de gestion de listes de courses pour un ménage. Les membres partagent des listes par fournisseur, ajoutent des articles, et consultent l'historique des courses passées.
+Application minimaliste servant à valider l'infrastructure complète : authentification, backend, base de données et frontend.
 
 ## Fonctionnalités
 
-- Authentification via Supabase Auth (inscription / connexion par email)
-- Création ou rejoindre un ménage via un code d'invitation
-- Plusieurs listes de courses ouvertes en parallèle (une par fournisseur)
-- Ajout d'articles avec quantité et unité
-- Historique des listes clôturées
-- Sessions de courses (à venir) : cocher les articles achetés ou indisponibles
-- Synchronisation en temps réel entre les membres (à venir)
+- Authentification via Supabase Auth : email/mot de passe et Google OAuth
+- Tableau de bord affichant l'état en temps réel des 4 composants (auth, backend, DB, frontend)
+- Page de détail du statut de la base de données (tables et comptages)
+- Page "À propos" avec la stack technique
 
 ## Stack technique
 
@@ -22,7 +19,7 @@ Application de gestion de listes de courses pour un ménage. Les membres partage
 | Backend | Node.js 18 + Express 5 + TypeScript |
 | ORM | Prisma 5 |
 | Base de données | PostgreSQL via Supabase |
-| Auth | Supabase Auth (vérification token via REST API) |
+| Auth | Supabase Auth (email + Google OAuth) |
 
 ## Hébergement
 
@@ -47,13 +44,10 @@ famcart/
 │       │   └── version.ts             # APP_VERSION
 │       ├── components/
 │       │   ├── Layout.tsx             # Entête + nav
-│       │   └── ProtectedRoute.tsx     # Gardes RequireAuth / RequireHousehold
+│       │   └── ProtectedRoute.tsx     # Garde RequireAuth
 │       ├── pages/
-│       │   ├── Login.tsx / Signup.tsx
-│       │   ├── Setup.tsx              # Créer ou rejoindre un ménage
-│       │   ├── Home.tsx               # Listes ouvertes
-│       │   ├── ListDetail.tsx         # Articles d'une liste
-│       │   ├── History.tsx            # Listes clôturées
+│       │   ├── Login.tsx              # Email + Google OAuth
+│       │   ├── Home.tsx               # Dashboard infrastructure
 │       │   ├── About.tsx
 │       │   └── DbStatus.tsx
 │       └── App.tsx
@@ -65,27 +59,11 @@ famcart/
 │       │   └── supabase.ts            # verifySupabaseToken via REST
 │       ├── routes/
 │       │   ├── auth.ts                # POST /auth/sync
-│       │   ├── households.ts          # GET|POST /households, POST /households/join
-│       │   ├── lists.ts               # CRUD listes + articles
-│       │   ├── suppliers.ts           # CRUD fournisseurs
-│       │   └── status.ts
-│       └── index.ts
+│       │   └── status.ts              # GET /status (stats DB)
+│       └── index.ts                   # GET /health
 ├── prisma/
 │   └── schema.prisma
 └── CLAUDE.md
-```
-
-## Modèle de données
-
-```
-Household ──< User
-          ──< Supplier
-          ──< ShoppingList >── Supplier
-                            >── User (creator)
-                            ──< ShoppingItem >── User (requested_by)
-          ──< ShoppingSession >── ShoppingList
-                              >── User (shopper)
-                              ──< SessionItem >── ShoppingItem
 ```
 
 ## Développement local
@@ -94,6 +72,7 @@ Household ──< User
 
 - Node.js v18+
 - Un projet Supabase avec les variables d'environnement configurées
+- Provider Google activé dans Supabase Authentication → Providers
 
 ### Installation
 
@@ -125,6 +104,12 @@ VITE_SUPABASE_ANON_KEY="eyJ..."
 VITE_API_URL="http://localhost:3000"
 ```
 
+### Redirect URLs pour Google OAuth
+
+Dans Supabase Dashboard → **Authentication → URL Configuration**, ajouter :
+- Site URL : `https://famcart.vercel.app`
+- Redirect URLs : `http://localhost:5173`, `https://famcart.vercel.app`
+
 ### Commandes Prisma
 
 ```bash
@@ -133,18 +118,10 @@ npm run db:generate  # Régénérer le client Prisma
 npm run db:studio    # Ouvrir Prisma Studio
 ```
 
-## État d'avancement
+## Routes backend
 
-- [x] Infrastructure (repo, monorepo, CI/CD)
-- [x] Frontend scaffoldé (React + Tailwind)
-- [x] Backend scaffoldé (Express + Prisma + schéma DB)
-- [x] Base de données Supabase configurée
-- [x] Déploiement initial (Vercel + Render)
-- [x] Connexion backend → Supabase opérationnelle (pooler)
-- [x] Authentification (Supabase Auth — inscription, connexion, JWT)
-- [x] Ménages (créer, rejoindre via code d'invitation)
-- [x] API REST (listes, articles, fournisseurs)
-- [x] Interface utilisateur (home, liste, historique)
-- [ ] Sessions de courses (cocher les articles pendant les courses)
-- [ ] Temps réel (Supabase Realtime)
-- [ ] Gestion des fournisseurs dans l'UI
+| Méthode | Route | Description |
+|---|---|---|
+| GET | /health | Health check (latence mesurée par le frontend) |
+| GET | /status | Stats des tables PostgreSQL |
+| POST | /auth/sync | Créer/mettre à jour l'utilisateur après connexion |

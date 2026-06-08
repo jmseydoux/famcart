@@ -7,17 +7,15 @@ interface AppUser {
   id: string
   name: string
   email: string
-  household_id: string | null
 }
 
 interface AuthContextValue {
   session: Session | null
   appUser: AppUser | null
   loading: boolean
-  signIn: (email: string, password: string) => Promise<AppUser | null>
-  signUp: (email: string, password: string, name: string) => Promise<void>
+  signIn: (email: string, password: string) => Promise<void>
+  signInWithGoogle: () => Promise<void>
   signOut: () => Promise<void>
-  refreshUser: () => Promise<AppUser | null>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -27,26 +25,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [appUser, setAppUser] = useState<AppUser | null>(null)
   const [loading, setLoading] = useState(true)
 
-  async function syncUser(supabaseUser: User | null): Promise<AppUser | null> {
+  async function syncUser(supabaseUser: User | null): Promise<void> {
     if (!supabaseUser) {
       setAppUser(null)
-      return null
+      return
     }
     try {
       const data = await api.post<{ user: AppUser }>('/auth/sync', {
-        name: supabaseUser.user_metadata?.name,
+        name: supabaseUser.user_metadata?.full_name ?? supabaseUser.user_metadata?.name,
       })
       setAppUser(data.user)
-      return data.user
     } catch {
       setAppUser(null)
-      return null
     }
-  }
-
-  async function refreshUser(): Promise<AppUser | null> {
-    const { data } = await supabase.auth.getSession()
-    return syncUser(data.session?.user ?? null)
   }
 
   useEffect(() => {
@@ -55,24 +46,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       syncUser(data.session?.user ?? null).finally(() => setLoading(false))
     })
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, newSession) => {
       setSession(newSession)
+      if (event === 'SIGNED_IN') {
+        syncUser(newSession?.user ?? null)
+      }
+      if (event === 'SIGNED_OUT') {
+        setAppUser(null)
+      }
     })
 
     return () => listener.subscription.unsubscribe()
   }, [])
 
-  async function signIn(email: string, password: string): Promise<AppUser | null> {
+  async function signIn(email: string, password: string): Promise<void> {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw new Error(error.message)
-    return syncUser(data.user)
+    await syncUser(data.user)
   }
 
-  async function signUp(email: string, password: string, name: string) {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { name } },
+  async function signInWithGoogle(): Promise<void> {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin },
     })
     if (error) throw new Error(error.message)
   }
@@ -83,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ session, appUser, loading, signIn, signUp, signOut, refreshUser }}>
+    <AuthContext.Provider value={{ session, appUser, loading, signIn, signInWithGoogle, signOut }}>
       {children}
     </AuthContext.Provider>
   )
