@@ -10,14 +10,17 @@ import { Modal, ConfirmModal } from '../components/ui/Modal'
 import { PageSpinner } from '../components/ui/Spinner'
 import { UNITS } from '../lib/constants'
 
-interface Product { id: string; name: string; category: string }
+interface Product {
+  id: string; name: string; category: string
+  suppliers: Array<{ supplier: { id: string; name: string } }>
+}
 interface ListItem {
   id: string; name: string; quantity: number; unit: string | null
   notes: string | null; status: string; added_by: { id: string; name: string }
   product: Product | null; sessionItems: Array<{ status: string }>
 }
 interface ShoppingList {
-  id: string; status: string; supplier: { name: string } | null
+  id: string; status: string; supplier: { id: string; name: string } | null
   creator: { name: string }; items: ListItem[]
   sessions: Array<{ id: string; shopper: { id: string; name: string } }>
 }
@@ -35,6 +38,7 @@ export default function ShoppingListView() {
   const [deleteItem, setDeleteItem] = useState<ListItem | null>(null)
   const [showStartConfirm, setShowStartConfirm] = useState(false)
   const [form, setForm] = useState(emptyItem)
+  const [filterBySupplier, setFilterBySupplier] = useState(true)
 
   const { data, isLoading } = useQuery({
     queryKey: ['list', lid],
@@ -77,7 +81,12 @@ export default function ShoppingListView() {
   })
 
   const list = data?.list
-  const products = productsData?.products ?? []
+  const allProducts = productsData?.products ?? []
+  const supplierId = list?.supplier?.id
+  const filteredProducts = supplierId && filterBySupplier
+    ? allProducts.filter(p => p.suppliers.some(s => s.supplier.id === supplierId))
+    : allProducts
+  const products = filteredProducts
   const toBuyItems = list?.items.filter(i => i.status === 'TO_BUY') ?? []
   const doneItems = list?.items.filter(i => i.status !== 'TO_BUY') ?? []
   const isInProgress = list?.status === 'IN_PROGRESS'
@@ -174,6 +183,10 @@ export default function ShoppingListView() {
           form={form}
           setForm={setForm}
           products={products}
+          allProductsCount={allProducts.length}
+          supplierName={list?.supplier?.name}
+          filterBySupplier={filterBySupplier}
+          onToggleFilter={() => setFilterBySupplier(v => !v)}
           onSelectProduct={selectProduct}
           onSubmit={() => addItem.mutate(form)}
           loading={addItem.isPending}
@@ -187,6 +200,10 @@ export default function ShoppingListView() {
           form={form}
           setForm={setForm}
           products={products}
+          allProductsCount={allProducts.length}
+          supplierName={list?.supplier?.name}
+          filterBySupplier={filterBySupplier}
+          onToggleFilter={() => setFilterBySupplier(v => !v)}
           onSelectProduct={selectProduct}
           onSubmit={() => updateItem.mutate({ id: editItem!.id, ...form })}
           loading={updateItem.isPending}
@@ -253,18 +270,41 @@ function ItemCard({ item, currentUserId, canEdit, onEdit, onDelete }: {
   )
 }
 
-function ItemForm({ form, setForm, products, onSelectProduct, onSubmit, loading, submitLabel }: {
+function ItemForm({ form, setForm, products, allProductsCount, supplierName, filterBySupplier, onToggleFilter, onSelectProduct, onSubmit, loading, submitLabel }: {
   form: typeof emptyItem; setForm: (f: typeof emptyItem) => void
-  products: Product[]; onSelectProduct: (id: string) => void
+  products: Product[]; allProductsCount: number
+  supplierName?: string; filterBySupplier: boolean; onToggleFilter: () => void
+  onSelectProduct: (id: string) => void
   onSubmit: () => void; loading: boolean; submitLabel: string
 }) {
   return (
     <div className="space-y-3">
-      {products.length > 0 && (
-        <Select label="Produit favori (optionnel)" value={form.product_id} onChange={e => onSelectProduct(e.target.value)}>
-          <option value="">— Saisie libre —</option>
-          {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-        </Select>
+      {allProductsCount > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <label className="block text-sm font-medium text-gray-700">
+              Produit favori {supplierName && filterBySupplier ? `— chez ${supplierName}` : '(optionnel)'}
+            </label>
+            {supplierName && (
+              <button
+                type="button"
+                onClick={onToggleFilter}
+                className="text-xs text-blue-600 hover:underline"
+              >
+                {filterBySupplier ? 'Voir tous' : `Filtrer (${supplierName})`}
+              </button>
+            )}
+          </div>
+          <Select value={form.product_id} onChange={e => onSelectProduct(e.target.value)}>
+            <option value="">— Saisie libre —</option>
+            {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </Select>
+          {supplierName && filterBySupplier && products.length === 0 && (
+            <p className="text-xs text-gray-400 mt-1">Aucun produit pour ce fournisseur —{' '}
+              <button type="button" onClick={onToggleFilter} className="text-blue-600 hover:underline">voir tous</button>
+            </p>
+          )}
+        </div>
       )}
       <Input label="Nom de l'article" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Ex : Lait entier" required />
       <div className="flex gap-3">
