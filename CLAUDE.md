@@ -120,7 +120,13 @@ famcart/
   - Route backend `/diag` : uptime, Node version, env vars, counts toutes les tables Prisma
   - Bouton Feedback flottant (toutes les pages) : formulaire → crée une issue GitHub via API
   - Route backend `/feedback` (auth requise) : appelle `api.github.com` avec `GITHUB_TOKEN`
+  - Issues enrichies : nom/email utilisateur, page source, user agent, version, date
   - Vercel Analytics intégré (`@vercel/analytics`)
+- [x] v0.5 — UX et corrections (juin 2026)
+  - Fix champ Unité trop étroit dans le formulaire d'ajout d'article (closes #2)
+  - Filtre produits favoris par fournisseur dans le formulaire d'ajout, toggle "Voir tous" (closes #4)
+  - Historique enrichi : articles achetés et non trouvés dépliables par session (closes #5)
+  - `AuthRequest` enrichi avec `name` et `email` pour usage dans les routes authentifiées
 
 ## Bootstrap du premier Super-Admin
 
@@ -131,7 +137,7 @@ famcart/
 
 ## Prochaines étapes
 
-- [ ] Configurer `GITHUB_TOKEN` sur Render pour activer le feedback in-app
+- [ ] Configurer `GITHUB_TOKEN` sur Render pour activer le feedback in-app (token GitHub `public_repo`)
 - [ ] Créer les premières invitations plateforme depuis `/admin`
 
 ## Instructions pour reprendre la session

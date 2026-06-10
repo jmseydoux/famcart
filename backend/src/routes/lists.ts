@@ -34,6 +34,11 @@ router.get('/history', requireHouseholdAccess, async (req: AuthRequest, res: Res
         take: 1,
         include: { shopper: { select: { id: true, name: true } } },
       },
+      items: {
+        where: { status: { in: ['BOUGHT', 'SKIPPED'] } },
+        select: { id: true, name: true, quantity: true, unit: true, status: true },
+        orderBy: { name: 'asc' },
+      },
       _count: { select: { items: { where: { status: 'BOUGHT' } } } },
     },
     orderBy: { closed_at: 'desc' },

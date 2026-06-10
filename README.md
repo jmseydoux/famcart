@@ -1,4 +1,4 @@
-# FamCart v0.4
+# FamCart v0.5
 
 Application de gestion de listes de courses partagées pour un ménage.
 
@@ -16,6 +16,7 @@ Application de gestion de listes de courses partagées pour un ménage.
 - **Diagnostic** — page `/diag` testant chaque couche de l'application (frontend, backend, DB, auth)
 - **Feedback** — bouton flottant pour signaler un bug ou suggérer une amélioration (crée une issue GitHub)
 - **Analytics** — Vercel Analytics intégré
+- **Historique enrichi** — détail des articles achetés/non trouvés dépliable par session
 
 ## Stack technique
 
