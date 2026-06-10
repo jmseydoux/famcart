@@ -115,6 +115,12 @@ famcart/
   - Multi-ménages, rôles Admin/Membre, Super-Admin
   - Invitations plateforme + ménage avec code à 6 caractères
   - Mode courses : cochage article par article, rafraîchissement manuel, report automatique
+- [x] v0.4 — Outillage et observabilité (juin 2026)
+  - Page Diag (`/diag`) : 5 checks en parallèle (env frontend, session auth, health backend, diag complet, API authentifiée)
+  - Route backend `/diag` : uptime, Node version, env vars, counts toutes les tables Prisma
+  - Bouton Feedback flottant (toutes les pages) : formulaire → crée une issue GitHub via API
+  - Route backend `/feedback` (auth requise) : appelle `api.github.com` avec `GITHUB_TOKEN`
+  - Vercel Analytics intégré (`@vercel/analytics`)
 
 ## Bootstrap du premier Super-Admin
 
@@ -125,8 +131,7 @@ famcart/
 
 ## Prochaines étapes
 
-- [ ] Push GitHub + vérification CI/CD Vercel/Render
-- [ ] Configurer `SUPER_ADMIN_SECRET` sur Render
+- [ ] Configurer `GITHUB_TOKEN` sur Render pour activer le feedback in-app
 - [ ] Créer les premières invitations plateforme depuis `/admin`
 
 ## Instructions pour reprendre la session

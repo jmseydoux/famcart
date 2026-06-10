@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { APP_VERSION } from '../lib/version'
 import { Bell, ChevronDown, X, Settings } from 'lucide-react'
+import FeedbackButton from './FeedbackButton'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 
@@ -182,6 +183,7 @@ export default function Layout() {
       <main className="max-w-lg mx-auto px-4 py-6">
         <Outlet />
       </main>
+      <FeedbackButton />
     </div>
   )
 }

@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from 'react'
 import { NavLink, Outlet, useNavigate, useParams, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { ShoppingCart, Package, History, Settings, Bell, ChevronDown, X, ChevronLeft } from 'lucide-react'
+import FeedbackButton from './FeedbackButton'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { APP_VERSION } from '../lib/version'
@@ -199,6 +200,7 @@ export default function HouseholdLayout() {
       <main className="flex-1 max-w-lg mx-auto w-full px-4 pt-4 pb-24">
         <Outlet context={{ household, isAdmin }} />
       </main>
+      <FeedbackButton />
 
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30">
         <div className="max-w-lg mx-auto flex">
