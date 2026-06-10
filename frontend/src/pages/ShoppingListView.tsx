@@ -268,8 +268,10 @@ function ItemForm({ form, setForm, products, onSelectProduct, onSubmit, loading,
       )}
       <Input label="Nom de l'article" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Ex : Lait entier" required />
       <div className="flex gap-3">
-        <Input label="Quantité" type="number" min="0.1" step="0.1" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} className="w-24" />
-        <div className="flex-1">
+        <div className="w-28 shrink-0">
+          <Input label="Quantité" type="number" min="0.1" step="0.1" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} />
+        </div>
+        <div className="flex-1 min-w-0">
           <Select label="Unité" value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })}>
             <option value="">—</option>
             {UNITS.map(u => <option key={u} value={u}>{u}</option>)}

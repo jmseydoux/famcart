@@ -1,4 +1,6 @@
-import { Router, Request, Response } from 'express'
+import { Response } from 'express'
+import { Router } from 'express'
+import { AuthRequest } from '../middleware/auth'
 import { APP_VERSION } from '../lib/version'
 
 const router = Router()
@@ -17,30 +19,34 @@ const TYPE_EMOJIS: Record<string, string> = {
   question:    '❓',
 }
 
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', async (req: AuthRequest, res: Response) => {
   const token = process.env.GITHUB_TOKEN
   if (!token) {
     res.status(503).json({ error: 'GitHub token non configuré sur le serveur.' })
     return
   }
 
-  const { title, body, type } = req.body as { title?: string; body?: string; type?: string }
+  const { title, body, type, page, userAgent } = req.body as {
+    title?: string; body?: string; type?: string; page?: string; userAgent?: string
+  }
   if (!title?.trim() || !body?.trim()) {
     res.status(400).json({ error: 'Titre et description requis.' })
     return
   }
+
   const issueType = TYPE_LABELS[type ?? ''] ? (type as string) : 'question'
   const emoji = TYPE_EMOJIS[issueType]
 
-  const user = (req as Request & { user?: { name?: string; email?: string } }).user
-  const userName = user?.name ?? 'Inconnu'
-  const userEmail = user?.email ?? ''
+  const userName = req.user?.name ?? 'Inconnu'
+  const userEmail = req.user?.email ?? ''
 
   const issueTitle = `${emoji} ${title.trim()}`
   const issueBody = [
     `**Type :** ${issueType}`,
     `**Signalé par :** ${userName}${userEmail ? ` (${userEmail})` : ''}`,
     `**Version :** v${APP_VERSION}`,
+    `**Page :** \`${page ?? 'inconnue'}\``,
+    `**Navigateur :** ${userAgent ?? 'inconnu'}`,
     `**Date :** ${new Date().toLocaleString('fr-FR', { timeZone: 'Europe/Paris' })}`,
     '',
     '---',

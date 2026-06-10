@@ -3,7 +3,7 @@ import { verifySupabaseToken } from '../lib/supabase'
 import prisma from '../lib/prisma'
 
 export interface AuthRequest extends Request {
-  user?: { id: string; supabaseId: string; isSuperAdmin: boolean }
+  user?: { id: string; supabaseId: string; isSuperAdmin: boolean; name: string; email: string }
   householdMember?: { id: string; role: string; household_id: string }
 }
 
@@ -29,7 +29,7 @@ export async function requireAuth(req: AuthRequest, res: Response, next: NextFun
     return
   }
 
-  req.user = { id: user.id, supabaseId: user.supabase_id, isSuperAdmin: user.is_super_admin }
+  req.user = { id: user.id, supabaseId: user.supabase_id, isSuperAdmin: user.is_super_admin, name: user.name, email: user.email }
   next()
 }
 

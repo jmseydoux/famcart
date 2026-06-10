@@ -42,7 +42,13 @@ export default function FeedbackButton() {
     e.preventDefault()
     setState('loading')
     try {
-      const data = await api.post<FeedbackResponse>('/feedback', { title, body, type })
+      const data = await api.post<FeedbackResponse>('/feedback', {
+        title,
+        body,
+        type,
+        page: window.location.pathname,
+        userAgent: navigator.userAgent,
+      })
       setResult(data)
       setState('success')
     } catch (err) {
