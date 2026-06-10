@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import statusRouter from './routes/status'
+import diagRouter from './routes/diag'
 import authRouter from './routes/auth'
 import adminRouter from './routes/admin'
 import householdsRouter from './routes/households'
@@ -21,6 +22,7 @@ app.use(express.json())
 
 app.get('/health', (_req, res) => { res.json({ status: 'ok' }) })
 app.use('/status', statusRouter)
+app.use('/diag', diagRouter)
 app.use('/auth', authRouter)
 app.use('/admin', requireAuth, requireSuperAdmin, adminRouter)
 app.use('/households', requireAuth, householdsRouter)

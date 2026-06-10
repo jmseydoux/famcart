@@ -16,6 +16,7 @@ import HouseholdSettings from './pages/HouseholdSettings'
 import Admin from './pages/Admin'
 import About from './pages/About'
 import DbStatus from './pages/DbStatus'
+import Diag from './pages/Diag'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
@@ -43,6 +44,7 @@ export default function App() {
               <Route path="admin" element={<Admin />} />
               <Route path="about" element={<About />} />
               <Route path="db-status" element={<DbStatus />} />
+              <Route path="diag" element={<Diag />} />
             </Route>
 
             {/* Household context with bottom nav */}

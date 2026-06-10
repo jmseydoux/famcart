@@ -139,6 +139,13 @@ function UserMenu() {
             À propos
           </NavLink>
           <NavLink
+            to="/diag"
+            onClick={() => setOpen(false)}
+            className="flex w-full px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+          >
+            Diagnostic
+          </NavLink>
+          <NavLink
             to="/db-status"
             onClick={() => setOpen(false)}
             className="flex w-full px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
