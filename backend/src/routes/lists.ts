@@ -100,6 +100,17 @@ router.post('/', requireHouseholdAccess, async (req: AuthRequest, res: Response)
   res.status(201).json({ list })
 })
 
+// Delete a list
+router.delete('/:lid', requireHouseholdAccess, async (req: AuthRequest, res: Response) => {
+  const hid = req.params.hid as string
+  const lid = req.params.lid as string
+  const list = await prisma.shoppingList.findFirst({ where: { id: lid, household_id: hid } })
+  if (!list) { res.status(404).json({ error: 'Liste introuvable' }); return }
+  if (list.status === 'IN_PROGRESS') { res.status(409).json({ error: 'Impossible de supprimer une liste en cours de courses' }); return }
+  await prisma.shoppingList.delete({ where: { id: lid } })
+  res.status(204).send()
+})
+
 // ── List Items ────────────────────────────────────────────────────────────────
 
 // Add item

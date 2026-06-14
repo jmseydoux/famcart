@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, ShoppingCart, ShoppingBag, ChevronRight, Clock } from 'lucide-react'
+import { Plus, ShoppingCart, ShoppingBag, ChevronRight, Clock, Trash2 } from 'lucide-react'
 import { api } from '../lib/api'
 import { useAuth } from '../contexts/AuthContext'
 import { Button } from '../components/ui/Button'
-import { Modal } from '../components/ui/Modal'
+import { Modal, ConfirmModal } from '../components/ui/Modal'
 import { Badge } from '../components/ui/Badge'
 import { Select } from '../components/ui/Input'
 import { PageSpinner } from '../components/ui/Spinner'
@@ -129,44 +129,73 @@ function ListCard({ list, hid, currentUserId }: { list: ShoppingList; hid: strin
   const isInProgress = list.status === 'IN_PROGRESS'
   const shopper = list.sessions[0]?.shopper
   const isMySession = shopper?.id === currentUserId
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const queryClient = useQueryClient()
+
+  const deleteList = useMutation({
+    mutationFn: () => api.delete(`/households/${hid}/lists/${list.id}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['lists', hid] }),
+  })
 
   return (
-    <Link
-      to={`/household/${hid}/lists/${list.id}`}
-      className={`block rounded-2xl border p-4 transition-all active:scale-[0.98] ${
-        isInProgress
-          ? 'bg-orange-50 border-orange-200 hover:border-orange-400'
-          : 'bg-white border-gray-200 hover:border-blue-300 hover:shadow-sm'
-      }`}
-    >
-      <div className="flex items-center justify-between">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <div className={`p-1.5 rounded-lg ${isInProgress ? 'bg-orange-100' : 'bg-blue-50'}`}>
-              {isInProgress ? (
-                <ShoppingBag className="w-4 h-4 text-orange-600" />
-              ) : (
-                <ShoppingCart className="w-4 h-4 text-blue-600" />
+    <>
+      <Link
+        to={`/household/${hid}/lists/${list.id}`}
+        className={`block rounded-2xl border p-4 transition-all active:scale-[0.98] ${
+          isInProgress
+            ? 'bg-orange-50 border-orange-200 hover:border-orange-400'
+            : 'bg-white border-gray-200 hover:border-blue-300 hover:shadow-sm'
+        }`}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <div className={`p-1.5 rounded-lg ${isInProgress ? 'bg-orange-100' : 'bg-blue-50'}`}>
+                {isInProgress ? (
+                  <ShoppingBag className="w-4 h-4 text-orange-600" />
+                ) : (
+                  <ShoppingCart className="w-4 h-4 text-blue-600" />
+                )}
+              </div>
+              <h3 className="font-semibold text-gray-900 truncate">
+                {list.supplier?.name ?? 'Liste générale'}
+              </h3>
+              {isInProgress && (
+                <Badge variant="orange">En cours</Badge>
               )}
             </div>
-            <h3 className="font-semibold text-gray-900 truncate">
-              {list.supplier?.name ?? 'Liste générale'}
-            </h3>
-            {isInProgress && (
-              <Badge variant="orange">En cours</Badge>
-            )}
+            <div className="flex items-center gap-3 text-sm text-gray-400 ml-9">
+              <span>{list._count.items} article{list._count.items > 1 ? 's' : ''}</span>
+              {isInProgress && shopper && (
+                <span className="text-orange-600 font-medium">
+                  {isMySession ? '👤 Vous faites les courses' : `🛒 ${shopper.name} fait les courses`}
+                </span>
+              )}
+            </div>
           </div>
-          <div className="flex items-center gap-3 text-sm text-gray-400 ml-9">
-            <span>{list._count.items} article{list._count.items > 1 ? 's' : ''}</span>
-            {isInProgress && shopper && (
-              <span className="text-orange-600 font-medium">
-                {isMySession ? '👤 Vous faites les courses' : `🛒 ${shopper.name} fait les courses`}
-              </span>
+          <div className="flex items-center gap-2">
+            {!isInProgress && (
+              <button
+                onClick={e => { e.preventDefault(); setConfirmDelete(true) }}
+                className="p-2 rounded-xl text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
             )}
+            <ChevronRight className="w-5 h-5 text-gray-300 flex-shrink-0" />
           </div>
         </div>
-        <ChevronRight className="w-5 h-5 text-gray-300 flex-shrink-0" />
-      </div>
-    </Link>
+      </Link>
+
+      <ConfirmModal
+        open={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        onConfirm={() => deleteList.mutate()}
+        title="Supprimer la liste"
+        message={`Supprimer la liste "${list.supplier?.name ?? 'générale'}" et ses ${list._count.items} article${list._count.items > 1 ? 's' : ''} ?`}
+        confirmLabel="Supprimer"
+        confirmVariant="danger"
+      />
+    </>
   )
 }
